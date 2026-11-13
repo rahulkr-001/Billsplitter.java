@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bill Splitter - Split bills. Share fairly.</title>
+  <meta name="description" content="A modern, intuitive financial utility dashboard to calculate, split bills, and manage shared group expenses with ease.">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- A. Application Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+            <path d="M7 15h0M2 9.5h20M14 15h3"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1 class="brand-name">Smart Bill Splitter</h1>
+            <span class="brand-badge">INR</span>
+          </div>
+          <p class="brand-tagline">Split bills. Share fairly.</p>
+        </div>
+      </div>
+
+      <!-- Navigation & Actions -->
+      <nav class="header-nav">
+        <button id="historyToggleBtn" class="nav-btn" title="View Calculation History">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>History</span>
+          <span id="historyBadge" class="nav-counter">0</span>
+        </button>
+
+        <button id="cliInfoBtn" class="nav-btn nav-btn-outline" title="Java Concepts & CLI Info">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+          <span>About</span>
+        </button>
+
+        <button id="resetHeaderBtn" class="nav-btn nav-btn-subtle" title="Reset All Fields">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span>Reset</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Content -->
+  <main class="app-main">
+    <div class="dashboard-grid">
+
+      <!-- LEFT COLUMN: Bill Inputs & Participant Management -->
+      <div class="dashboard-left">
+
+        <!-- B. Bill Details Card -->
+        <section class="card bill-details-card">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="card-title">Bill Details</h2>
+              <p class="card-subtitle">Enter expense details and splitting preferences</p>
+            </div>
+          </div>
+
+          <form id="billForm" onsubmit="return false;" class="form-body">
+            <!-- Expense Title -->
+            <div class="form-group">
+              <label for="expenseTitle" class="form-label">
+                Expense Description <span class="label-optional">(Optional)</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </span>
+                <input type="text" id="expenseTitle" class="form-input" placeholder="Enter bill description" maxlength="60">
+              </div>
+            </div>
+
+            <!-- Total Amount Input -->
+            <div class="form-group">
+              <label for="billAmount" class="form-label">
+                Bill Amount <span class="label-required">*</span>
+              </label>
+              <div class="input-with-prefix">
+                <span class="currency-prefix">₹</span>
+                <input type="number" id="billAmount" class="form-input font-numeric" placeholder="Enter total bill amount" min="0.01" step="any" required>
+              </div>
+              <div id="amountError" class="input-error-msg" style="display:none;"></div>
+            </div>
+
+            <!-- GST / Service Tax Toggle -->
+            <div class="tax-card">
+              <div class="tax-toggle-row">
+                <div class="tax-info">
+                  <span class="tax-title">Include GST / Service Tax</span>
+                  <span class="tax-desc">Applies tax percentage on total bill before split</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="taxToggle">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Collapsible Tax Input Panel -->
+              <div id="taxInputsSection" class="tax-details-panel" style="display: none;">
+                <div class="tax-pills">
+                  <button type="button" class="tax-pill" data-tax="5">5%</button>
+                  <button type="button" class="tax-pill" data-tax="12">12%</button>
+                  <button type="button" class="tax-pill" data-tax="18">18%</button>
+                  <button type="button" class="tax-pill" data-tax="28">28%</button>
+                  <button type="button" class="tax-pill" id="customTaxPill" data-tax="custom">Custom</button>
+                </div>
+                <div class="custom-tax-input-group" id="customTaxGroup" style="display:none;">
+                  <label for="customTaxRate" class="sub-label">Tax Percentage (%)</label>
+                  <input type="number" id="customTaxRate" class="form-input form-input-sm font-numeric" placeholder="Enter tax percentage" min="0" max="100" step="any">
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature 1: Participant Management -->
+            <div class="participants-manager">
+              <div class="section-label-row">
+                <label class="form-label mb-0">
+                  Participants <span id="participantCountBadge" class="count-pill">0 People</span>
+                </label>
+                <button type="button" id="clearParticipantsBtn" class="btn-text-danger" title="Remove all participants">Clear All</button>
+              </div>
+
+              <!-- Add Participant Input Form -->
+              <div class="add-participant-box">
+                <input type="text" id="newParticipantInput" class="form-input" placeholder="Enter participant name" maxlength="30">
+                <button type="button" id="addParticipantBtn" class="btn btn-primary btn-add">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Add</span>
+                </button>
+              </div>
+              <div id="participantValidationMsg" class="input-error-msg" style="display: none;"></div>
+
+              <!-- List of Active Participants with Remove feature -->
+              <div id="participantsList" class="participants-tag-list">
+                <!-- Rendered dynamically via JS -->
+              </div>
+            </div>
+
+            <!-- Main Split Action Button -->
+            <button type="button" id="splitBillBtn" class="btn btn-emerald btn-block btn-lg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="4"></rect>
+                <line x1="8" y1="6" x2="16" y2="6"></line>
+                <line x1="16" y1="14" x2="16" y2="18"></line>
+                <path d="M16 10h.01"></path>
+                <path d="M12 10h.01"></path>
+                <path d="M8 10h.01"></path>
+                <path d="M12 14h.01"></path>
+                <path d="M8 14h.01"></path>
+                <path d="M12 18h.01"></path>
+                <path d="M8 18h.01"></path>
+              </svg>
+              <span>Calculate & Split Bill</span>
+            </button>
+          </form>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Calculation Highlights, Participants Cards & Results -->
+      <div class="dashboard-right">
+
+        <!-- C. Bill Calculation Hero Card -->
+        <section class="card result-hero-card">
+          <div class="hero-top-row">
+            <span class="hero-badge">Per Person Share</span>
+            <span id="calculationModeBadge" class="hero-subbadge">Equal Split</span>
+          </div>
+
+          <div class="hero-amount-container">
+            <span class="hero-currency">₹</span>
+            <span id="perPersonDisplay" class="hero-amount font-numeric">0.00</span>
+          </div>
+          <p id="heroSubtext" class="hero-subtext">No calculation available.</p>
+
+          <!-- Calculation Metric Breakdown -->
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="metric-label">Principal Amount</span>
+              <span id="metricBaseAmount" class="metric-value font-numeric">--</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Tax / GST (<span id="metricTaxPercent">--</span>)</span>
+              <span id="metricTaxAmount" class="metric-value font-numeric">--</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Total Payable</span>
+              <span id="metricFinalTotal" class="metric-value font-numeric font-bold">--</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Participants</span>
+              <span id="metricParticipants" class="metric-value font-numeric">0 People</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- D. Individual Participants Cards Section -->
+        <section class="card participants-section-card">
+          <div class="card-header border-bottom">
+            <div class="card-header-icon bg-violet-light text-violet">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="card-title">Participant Shares</h2>
+              <p class="card-subtitle">Individual breakdown for each member</p>
+            </div>
+          </div>
+
+          <div id="participantCardsGrid" class="participant-cards-grid">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </section>
+
+        <!-- E. Results Section & Digital Receipt -->
+        <section class="card results-card">
+          <div class="card-header">
+            <div class="card-header-icon bg-slate-light text-slate">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h2 class="card-title">Bill Summary Receipt</h2>
+              <p class="card-subtitle">Formatted receipt ready for export and sharing</p>
+            </div>
+          </div>
+
+          <!-- Digital Receipt Slip Container -->
+          <div id="receiptContainer">
+            <!-- Rendered via JS: shows empty state or actual receipt slip -->
+          </div>
+
+          <!-- Feature 3: Action Buttons (Reset, Copy, Remind) -->
+          <div class="results-action-bar">
+            <!-- Copy Summary Button -->
+            <button type="button" id="copySummaryBtn" class="btn btn-secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Summary</span>
+            </button>
+
+            <!-- Send Payment Reminders Button -->
+            <button type="button" id="sendRemindersBtn" class="btn btn-violet" title="Simulates background payment reminder thread">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Send Reminders</span>
+            </button>
+
+            <!-- Reset Button -->
+            <button type="button" id="resetAllBtn" class="btn btn-outline-danger">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <polyline points="23 20 23 14 17 14"></polyline>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+              </svg>
+              <span>Reset</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Feature 2: Slide-out Calculation History Drawer -->
+  <aside id="historyDrawer" class="history-drawer" aria-hidden="true">
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-title-row">
+          <div class="drawer-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 class="drawer-title">Splitting History</h3>
+            <p class="drawer-subtitle">Previously saved calculations</p>
+          </div>
+        </div>
+        <button id="closeDrawerBtn" class="btn-close" aria-label="Close History">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer-actions-bar">
+        <span id="historyItemCountText" class="history-count-text">0 saved bills</span>
+        <button type="button" id="clearHistoryBtn" class="btn-text-danger">Clear History</button>
+      </div>
+
+      <div id="historyListContainer" class="history-list">
+        <!-- Dynamically rendered via JS -->
+      </div>
+    </div>
+  </aside>
+
+
+<!-- About Smart Bill Splitter Modal -->
+<div id="cliModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h3 class="modal-title">About Smart Bill Splitter</h3>
+      <button id="closeModalBtn" class="btn-close" aria-label="Close Modal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Project Overview -->
+      <h4 class="modal-section-title">Project Overview</h4>
+      <p class="modal-desc">
+        Smart Bill Splitter is a lightweight expense-sharing application
+        designed to simplify group bill calculations and shared expense
+        management. It supports equal and tax-inclusive bill splitting,
+        dynamic participant management, individual contribution breakdowns,
+        digital receipt generation, and persistent calculation history.
+      </p>
+      <p class="modal-desc">
+        Built with Java and modern web technologies, the application
+        provides a responsive browser-based dashboard powered by an
+        embedded Java HTTP server, alongside a fully functional
+        command-line interface.
+      </p>
+
+      <!-- Application Workflow -->
+      <h4 class="modal-section-title">Application Workflow</h4>
+      <ul class="concepts-list">
+        <li><strong>1. Enter Bill Details:</strong> Provide the total expense amount and an optional description.</li>
+        <li><strong>2. Add Participants:</strong> Dynamically add or remove members with input validation.</li>
+        <li><strong>3. Configure Tax:</strong> Apply GST or service tax when applicable.</li>
+        <li><strong>4. Calculate Shares:</strong> Process the total expense and determine individual contributions.</li>
+        <li><strong>5. Generate Receipt:</strong> Create and save a formatted expense breakdown.</li>
+        <li><strong>6. Manage History:</strong> Review previous calculations and reload saved bills.</li>
+      </ul>
+
+      <!-- Java Concepts -->
+      <h4 class="modal-section-title">Java Concepts & Implementation</h4>
+      <ul class="concepts-list">
+        <li><strong>Classes and Objects:</strong> Organizing application functionality into reusable components.</li>
+        <li><strong>Encapsulation:</strong> Managing application data through controlled access.</li>
+        <li><strong>Inheritance:</strong> Sharing functionality between related bill classes.</li>
+        <li><strong>Abstraction:</strong> Defining common behavior through the abstract <code>Bill</code> class.</li>
+        <li><strong>Interfaces:</strong> Establishing common functionality through the <code>Exportable</code> interface.</li>
+        <li><strong>Polymorphism:</strong> Supporting different bill calculation implementations.</li>
+        <li><strong>Arrays & StringBuffer:</strong> Managing participant information and formatting receipts.</li>
+        <li><strong>Exception Handling:</strong> Handling invalid inputs using custom exceptions.</li>
+        <li><strong>Multithreading:</strong> Executing background reminder tasks.</li>
+        <li><strong>File Handling & Synchronization:</strong> Managing persistent records and concurrent file operations.</li>
+      </ul>
+
+      <!-- Technology Stack -->
+      <h4 class="modal-section-title">Technology Stack</h4>
+      <ul class="concepts-list">
+        <li><strong>Java (JDK 11+):</strong> Core application logic and backend processing.</li>
+        <li><strong>Java HTTP Server:</strong> Embedded server using <code>com.sun.net.httpserver.HttpServer</code>.</li>
+        <li><strong>HTML5:</strong> Dashboard structure and interface elements.</li>
+        <li><strong>CSS3:</strong> Responsive layouts, styling, and animations.</li>
+        <li><strong>Vanilla JavaScript:</strong> Dynamic interactions and frontend logic.</li>
+        <li><strong>JSON:</strong> Communication between the frontend and backend.</li>
+        <li><strong>Java I/O:</strong> Local receipt and expense history storage.</li>
+      </ul>
+
+      <!-- CLI Execution -->
+      <h4 class="modal-section-title">Terminal & CLI Execution</h4>
+      <p class="modal-desc">
+        The application also supports an interactive command-line
+        interface without requiring the web dashboard.
+      </p>
+
+      <div class="code-box">
+        <code>java billsplitter.Main --cli</code>
+      </div>
+
+      <p class="modal-desc">
+        Alternatively, launch the default application and select
+        option <code>2</code> from the console menu to enter CLI mode.
+      </p>
+
+      <!-- Project Components -->
+      <h4 class="modal-section-title">Core Project Components</h4>
+      <ul class="modal-file-list">
+        <li><strong>Bill.java:</strong> Abstract bill model with <code>EqualBill</code> and <code>TaxedBill</code> implementations.</li>
+        <li><strong>Exportable.java:</strong> Interface defining receipt export functionality.</li>
+        <li><strong>InvalidBillException.java:</strong> Custom exception for bill validation.</li>
+        <li><strong>Main.java:</strong> Application entry point and CLI/Web launch management.</li>
+        <li><strong>WebServer.java:</strong> Embedded HTTP server and API request handling.</li>
+        <li><strong>ReceiptManager.java:</strong> Receipt generation and file management.</li>
+        <li><strong>BillHistoryManager.java:</strong> Persistent calculation history management.</li>
+        <li><strong>PaymentReminderThread.java:</strong> Background payment reminder processing.</li>
+        <li><strong>SimpleJson.java:</strong> Lightweight JSON parsing and serialization.</li>
+      </ul>
+      <!-- Storage -->
+      <h4 class="modal-section-title">Local Data Storage</h4>
+      <ul class="modal-file-list">
+        <li><strong>split_receipt.txt:</strong> Stores generated bill receipts.</li>
+        <li><strong>bill_history.txt:</strong> Maintains previous bill calculations.</li>
+      </ul>
+      <div class="modal-footer">
+        <button type="button" id="closeModalFooterBtn" class="btn btn-secondary">Close</button>
+      </div>
+     </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>Smart Bill Splitter &copy; Share fairly & friendly &bull; Built with standard Java SE, HTML5, CSS3 & JavaScript</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

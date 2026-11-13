@@ -1,0 +1,49 @@
+# ==============================================================================
+# Smart Bill Splitter - Consolidated Git Ignore Rules
+# ==============================================================================
+
+# Compiled Java bytecode
+*.class
+**/*.class
+bin/
+out/
+build/
+target/
+
+# Local runtime receipts and personal calculation history
+split_receipt.txt
+**/split_receipt.txt
+bill_history.txt
+**/bill_history.txt
+
+# IntelliJ IDEA project metadata and temporary caches
+.idea/
+**/.idea/
+*.iml
+**/*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code settings
+.vscode/
+**/.vscode/
+
+# Eclipse project files
+.project
+.classpath
+.settings/
+
+# Operating system generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Log and temporary files
+*.log
+*.tmp
+*.bak
